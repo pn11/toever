@@ -13,9 +13,8 @@ import os
 import argparse
 import mimetypes
 import hashlib
-import ConfigParser
+import configparser as ConfigParser
 import keyring
-import chardet
 import config as sys_config
 
 
@@ -142,7 +141,7 @@ class UserConfig():
             user_config.set(sys_config.application_name, 'tags', '')
             with open(self.filepath, 'wb') as configfile:
                 user_config.write(configfile)
-                os.chmod(self.filepath, 0644)
+                os.chmod(self.filepath, '0644')
         self.user_config.read(self.filepath)
 
     def getUserOption(self, option):
@@ -152,20 +151,20 @@ class UserConfig():
     def setDeveloperToken(self):
         print(textui.colored.green('Get Evernote DeveloperToken URL --> ' + sys_config.token_geturl))
         while True:
-            developer_token = raw_input('Token: ')
+            developer_token = input('Token: ')
             if self.isDeveloperToken(developer_token, sys_config.sandbox):
                 keyring.set_password(sys_config.application_name, 'developer_token', developer_token)
                 return self
 
     def setDefaultNotebook(self):
         print(textui.colored.green('Set toEver default post notebook / Not enter if you do not set'))
-        notebook = raw_input('Notebook: ')
+        notebook = input('Notebook: ')
         self.user_config.set(sys_config.application_name, 'notebook', notebook)
         return self
 
     def setDefaultTags(self):
         print(textui.colored.green('Set toEver default post tags / Not enter if you do not set'))
-        tags = raw_input('Tags: ')
+        tags = input('Tags: ')
         self.user_config.set(sys_config.application_name, 'tags', tags)
         return self
 
@@ -184,8 +183,12 @@ class UserConfig():
 
 class Util():
     @staticmethod
-    def isBinary(data):
-        return chardet.detect(data)['encoding'] is None
+    def isBinary(filename):
+        _, ext = os.path.splitext(filename)
+        if ext in ['.txt', '.text']:
+            return False
+        return True
+
 
 
 def main():
@@ -245,12 +248,13 @@ def main():
             toever.content = str()
             resource = None
             filename = os.path.basename(filepath)
-            sys.stdin = open(filepath, 'r')
-            if Util.isBinary(open(filepath, 'r').read()):
+            if Util.isBinary(filepath):
+                sys.stdin = open(filepath, 'rb')
                 resource = toever.getResource(filename)
                 if not toever.hide:
                     print(textui.colored.green("Attachment file is '" + filename + "'"))
             else:
+                sys.stdin = open(filepath, 'r')
                 toever.setContent()
             if args.title is None:
                 note_title = filename
